@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Inventario de Autoreporte</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #fffaf6;
+      color: #333;
+      margin: 0;
+      padding: 10px;
+    }
+    h1 {
+      text-align: center;
+      color: #b85c38;
+      font-size: 1.5rem;
+    }
+    .dia {
+      background: #ffe5d9;
+      border-radius: 10px;
+      padding: 10px;
+      margin: 10px 0;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 8px;
+      font-size: 0.85rem;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 6px;
+      vertical-align: top;
+    }
+    th {
+      background: #f8c291;
+      text-align: left;
+      font-size: 0.85rem;
+    }
+    textarea, input[type="text"], input[type="datetime-local"] {
+      width: 100%;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      padding: 4px;
+      font-family: Arial, sans-serif;
+      font-size: 0.85rem;
+      box-sizing: border-box;
+    }
+    textarea {
+      min-height: 40px;
+    }
+    .checkboxes {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 2px;
+      font-family: Arial, sans-serif;
+    }
+    .checkboxes label {
+      font-size: 0.8rem;
+    }
+    button {
+      background: #e07a5f;
+      color: white;
+      border: none;
+      padding: 6px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-top: 8px;
+      font-size: 0.85rem;
+    }
+    button:hover {
+      background: #b85c38;
+    }
+
+    /* Ajustes para pantallas pequeñas */
+    @media (max-width: 600px) {
+      table, thead, tbody, th, td, tr {
+        display: block;
+        width: 100%;
+      }
+      thead { display: none; }
+      tr { margin-bottom: 10px; border: 1px solid #ddd; border-radius: 6px; background: #fff; }
+      td { border: none; padding: 6px; }
+      td::before {
+        content: attr(data-label);
+        font-weight: bold;
+        display: block;
+        margin-bottom: 2px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1>Inventario de Autoreporte</h1>
+  <div id="dias"></div>
+
+  <script>
+    const sintomas = [
+      "Palpitaciones", "Sudoración", "Dificultad para respirar", "Náuseas",
+      "Escalofríos", "Temblores en manos", "Comezón", "Tensión muscular"
+    ];
+
+    function crearDia(num) {
+      const div = document.createElement("div");
+      div.className = "dia";
+      div.innerHTML = `
+        <h2>Día ${num+1}</h2>
+        <table id="tabla_${num}">
+          <thead>
+            <tr>
+              <th>Inicio</th>
+              <th>Fin</th>
+              <th>Contexto</th>
+              <th>Estímulo detonante</th>
+              <th>Pensamiento</th>
+              <th>Emoción</th>
+              <th>Síntomas físicos</th>
+              <th>¿Qué hiciste?</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+        <button onclick="agregarFila(${num})">➕ Agregar evento</button>
+      `;
+      return div;
+    }
+
+    function crearFila(dia, datos = {}) {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td data-label="Inicio"><input type="datetime-local" value="${datos.inicio||''}" onchange="guardarDatos()"></td>
+        <td data-label="Fin"><input type="datetime-local" value="${datos.fin||''}" onchange="guardarDatos()"></td>
+        <td data-label="Contexto"><textarea onchange="guardarDatos()">${datos.contexto||''}</textarea></td>
+        <td data-label="Estímulo detonante"><textarea onchange="guardarDatos()">${datos.estimulo||''}</textarea></td>
+        <td data-label="Pensamiento"><textarea onchange="guardarDatos()">${datos.pensamiento||''}</textarea></td>
+        <td data-label="Emoción"><input type="text" value="${datos.emocion||''}" onchange="guardarDatos()"></td>
+        <td data-label="Síntomas físicos">
+          <div class="checkboxes">
+            ${sintomas.map(s => `
+              <label><input type="checkbox" ${datos.sintomas && datos.sintomas.includes(s) ? 'checked':''} onchange="guardarDatos()"> ${s}</label>
+            `).join('')}
+          </div>
+        </td>
+        <td data-label="¿Qué hiciste?"><textarea onchange="guardarDatos()">${datos.accion||''}</textarea></td>
+      `;
+      return tr;
+    }
+
+    function agregarFila(dia, datos) {
+      const tbody = document.querySelector(`#tabla_${dia} tbody`);
+      tbody.appendChild(crearFila(dia, datos));
+      guardarDatos();
+    }
+
+    function guardarDatos() {
+      let registros = [];
+      for (let d = 0; d < 7; d++) {
+        let filas = [];
+        document.querySelectorAll(`#tabla_${d} tbody tr`).forEach(tr => {
+          const inputs = tr.querySelectorAll("input, textarea");
+          let fila = {
+            inicio: inputs[0].value,
+            fin: inputs[1].value,
+            contexto: inputs[2].value,
+            estimulo: inputs[3].value,
+            pensamiento: inputs[4].value,
+            emocion: inputs[5].value,
+            sintomas: Array.from(tr.querySelectorAll("input[type=checkbox]:checked")).map(cb=>cb.nextSibling.textContent.trim()),
+            accion: inputs[6].value
+          };
+          filas.push(fila);
+        });
+        registros.push(filas);
+      }
+      localStorage.setItem("fobiaRegistros", JSON.stringify(registros));
+    }
+
+    function cargarDatos() {
+      const guardado = JSON.parse(localStorage.getItem("fobiaRegistros")||"[]");
+      for (let d = 0; d < 7; d++) {
+        if (guardado[d]) {
+          guardado[d].forEach(fila => agregarFila(d, fila));
+        }
+      }
+    }
+
+    function inicializarDias() {
+      const cont = document.getElementById("dias");
+      cont.innerHTML = "";
+      for (let i = 0; i < 7; i++) {
+        cont.appendChild(crearDia(i));
+      }
+    }
+
+    inicializarDias();
+    cargarDatos();
+  </script>
+</body>
+</html>
