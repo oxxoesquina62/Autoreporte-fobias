@@ -155,28 +155,46 @@
       guardarDatos();
     }
 
-    function guardarDatos() {
-      let registros = [];
-      for (let d = 0; d < 7; d++) {
-        let filas = [];
-        document.querySelectorAll(`#tabla_${d} tbody tr`).forEach(tr => {
-          const inputs = tr.querySelectorAll("input, textarea");
-          let fila = {
-            inicio: inputs[0].value,
-            fin: inputs[1].value,
-            contexto: inputs[2].value,
-            estimulo: inputs[3].value,
-            pensamiento: inputs[4].value,
-            emocion: inputs[5].value,
-            sintomas: Array.from(tr.querySelectorAll("input[type=checkbox]:checked")).map(cb=>cb.nextSibling.textContent.trim()),
-            accion: inputs[6].value
-          };
-          filas.push(fila);
-        });
-        registros.push(filas);
-      }
-      localStorage.setItem("fobiaRegistros", JSON.stringify(registros));
-    }
+function guardarDatos() {
+  let registros = [];
+  for (let d = 0; d < 7; d++) {
+    document.querySelectorAll(`#tabla_${d} tbody tr`).forEach(tr => {
+      const inicioEl = tr.querySelector('td[data-label="Inicio"] input');
+      const finEl = tr.querySelector('td[data-label="Fin"] input');
+      const contextoEl = tr.querySelector('td[data-label="Contexto"] textarea');
+      const estimuloEl = tr.querySelector('td[data-label="Estímulo detonante"] textarea');
+      const pensamientoEl = tr.querySelector('td[data-label="Pensamiento"] textarea');
+      const emocionEl = tr.querySelector('td[data-label="Emoción"] input');
+      const sintomasEls = tr.querySelectorAll('td[data-label="Síntomas físicos"] input[type="checkbox"]:checked');
+      const accionEl = tr.querySelector('td[data-label="¿Qué hiciste?"] textarea');
+
+      const fila = {
+        inicio: inicioEl ? inicioEl.value : '',
+        fin: finEl ? finEl.value : '',
+        contexto: contextoEl ? contextoEl.value : '',
+        estimulo: estimuloEl ? estimuloEl.value : '',
+        pensamiento: pensamientoEl ? pensamientoEl.value : '',
+        emocion: emocionEl ? emocionEl.value : '',
+        sintomas: Array.from(sintomasEls).map(cb => {
+          const lab = cb.closest('label'); // el texto del label
+          return lab ? lab.textContent.trim() : (cb.value || '');
+        }),
+        accion: accionEl ? accionEl.value : ''
+      };
+
+      // Enviar a Google Sheets
+      fetch(SCRIPT_URL, {
+        method: "POST",
+        body: JSON.stringify(fila),
+        headers: { "Content-Type": "application/json" }
+      }).catch(err => console.error('Error enviando a Google:', err));
+
+      registros.push(fila);
+    });
+  }
+  localStorage.setItem("fobiaRegistros", JSON.stringify(registros));
+}
+
 
     function cargarDatos() {
       const guardado = JSON.parse(localStorage.getItem("fobiaRegistros")||"[]");
